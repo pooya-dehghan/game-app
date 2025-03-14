@@ -6,6 +6,7 @@ type Game struct {
 	QuestionIDs []uint
 	PlayerIDs []uint
 	WinnerId uint
+	StartTime time.Time
 }
 
 type Player struct {
