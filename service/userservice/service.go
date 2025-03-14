@@ -26,5 +26,16 @@ type  RegisterResponse struct{
 
 func (s Service) Register(req RegisterInput) (RegisterResponse , error){
 
-	s.repo.IsPhoneNumberUnique(req.PhoneNumber)
+	if isUnique , err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || isUnique != nil {
+
+	if err != nil {
+		return RegisterReponse{} , err
+	}
+
+	if isUnique != nil {
+		return RegisterReponse{} , fmt.Errorf("phone number is not unique")
+	}
+	}
+
+
 }
