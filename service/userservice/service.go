@@ -1,41 +1,39 @@
-package service 
+package service
 
 import (
+	"fmt"
+
 	"pooyadehghan.com/entity"
-	"pooyadehghan.com/phonenumber"
-	_ "github.com/google/uuid"
 )
 
-
 type Repository interface {
-	IsPhoneNumberUnique(phoneNumber string) (bool , error)
+	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 }
 
 type Service struct {
 	repo Repository
 }
- 
-type  RegisterRequest struct{
+
+type RegisterRequest struct {
 	phoneNumber string
-	name string
+	name        string
 }
- 
-type  RegisterResponse struct{ 
+
+type RegisterResponse struct {
 	User entity.User
 }
 
-func (s Service) Register(req RegisterInput) (RegisterResponse , error){
+func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 
-	if isUnique , err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || isUnique != nil {
+	if isUnique, err := s.repo.IsPhoneNumberUnique(req.phoneNumber); err != nil || isUnique != nil {
 
-	if err != nil {
-		return RegisterReponse{} , err
+		if err != nil {
+			return RegisterResponse{}, err
+		}
+
+		if isUnique != nil {
+			return RegisterResponse{}, fmt.Errorf("phone number is not unique")
+		}
 	}
-
-	if isUnique != nil {
-		return RegisterReponse{} , fmt.Errorf("phone number is not unique")
-	}
-	}
-
 
 }
