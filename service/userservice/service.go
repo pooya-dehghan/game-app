@@ -3,7 +3,8 @@ package service
 import (
 	"fmt"
 
-	"pooyadehghan.com/entity"
+	"github.com/pooya-dehghan/entity"
+	"github.com/pooya-dehghan/pkg/phonenumber"
 )
 
 type Repository interface {
@@ -24,16 +25,20 @@ type RegisterResponse struct {
 }
 
 func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
+	if !phonenumber.IsValid(req.phoneNumber) {
+		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
+	}
 
-	if isUnique, err := s.repo.IsPhoneNumberUnique(req.phoneNumber); err != nil || isUnique != nil {
+	if isUnique, err := s.repo.IsPhoneNumberUnique(req.phoneNumber); err != nil || !isUnique {
 
 		if err != nil {
 			return RegisterResponse{}, err
 		}
 
-		if isUnique != nil {
+		if !isUnique {
 			return RegisterResponse{}, fmt.Errorf("phone number is not unique")
 		}
 	}
 
+	return RegisterResponse{}, nil
 }
