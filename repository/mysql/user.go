@@ -14,14 +14,14 @@ func (d *MySQLDB) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
 	row := d.db.QueryRow(`select * from users where phone_number = ?`, phoneNumber)
 
 	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &createdAt)
-
+	fmt.Println(user)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return true, nil
+			return false, nil
 		}
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func (d *MySQLDB) RegisterUser(user entity.User) (createdUser entity.User, err error) {

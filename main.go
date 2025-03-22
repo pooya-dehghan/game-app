@@ -1,34 +1,50 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
-	"github.com/pooya-dehghan/entity"
 	"github.com/pooya-dehghan/repository/mysql"
+	"github.com/pooya-dehghan/service/userservice"
 )
 
 func main() {
-	http.HandleFunc("/users/register", userRegisterHandler)
-	http.ListenAndServe(":8787", nil)
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/users/register", userRegisterHandler)
+	http.ListenAndServe(":8787", mux)
 }
 
 func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		fmt.Print(writer, "invalid method")
 	}
-}
 
-func userRegisterTest() {
-	mysqlRepo := mysql.New()
-
-	createdUser, err := mysqlRepo.RegisterUser(entity.User{
-		Name:        "poouya",
-		PhoneNumber: "0912992",
-	})
+	data, err := io.ReadAll(req.Body)
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf(`error in read body %s`, err.Error())))
+		return
+	}
+	var reqData userservice.RegisterRequest
+	err = json.Unmarshal(data, &reqData)
+	fmt.Println(reqData)
 
 	if err != nil {
-		fmt.Errorf("some thing went wrong %w", err)
+		writer.Write([]byte(fmt.Sprintf(`error in read body %s`, err.Error())))
+		return
 	}
-	fmt.Println(createdUser)
+	mysqlRep := mysql.New()
+
+	userSvc := userservice.New(mysqlRep)
+
+	userCreated, err := userSvc.Register(reqData)
+
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf(`error in user creation %s`, err.Error())))
+		return
+	}
+
+	fmt.Println(userCreated)
 }

@@ -1,4 +1,4 @@
-package service
+package userservice
 
 import (
 	"fmt"
@@ -17,20 +17,24 @@ type Service struct {
 }
 
 type RegisterRequest struct {
-	phoneNumber string
-	name        string
+	PhoneNumber string
+	Name        string
 }
 
 type RegisterResponse struct {
 	User entity.User
 }
 
+func New(repo Repository) Service {
+	return Service{repo: repo}
+}
+
 func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
-	if !phonenumber.IsValid(req.phoneNumber) {
+	if !phonenumber.IsValid(req.PhoneNumber) {
 		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
 	}
 
-	if isUnique, err := s.repo.IsPhoneNumberUnique(req.phoneNumber); err != nil || !isUnique {
+	if isUnique, err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || !isUnique {
 
 		if err != nil {
 			return RegisterResponse{}, err
@@ -43,8 +47,8 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 
 	user := entity.User{
 		ID:          0,
-		PhoneNumber: req.phoneNumber,
-		Name:        req.name,
+		PhoneNumber: req.PhoneNumber,
+		Name:        req.Name,
 	}
 
 	creatdUser, err := s.repo.RegisterUser(user)
