@@ -19,9 +19,9 @@ type Service struct {
 }
 
 type RegisterRequest struct {
-	PhoneNumber    string
-	Name           string
-	Password string
+	PhoneNumber string
+	Name        string
+	Password    string
 }
 
 type RegisterResponse struct {
@@ -37,7 +37,7 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
 	}
 
-	if len(req.Password < 8){
+	if len(req.Password) < 8 {
 		return RegisterResponse{}, fmt.Errorf("password is not long enough")
 	}
 
@@ -77,7 +77,7 @@ type LoginResponse struct {
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
-	return {}, nil
+	return LoginResponse{}, nil
 }
 
 func GetMD5Hash(text string) string {
