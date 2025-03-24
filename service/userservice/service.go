@@ -1,6 +1,8 @@
 package userservice
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/pooya-dehghan/entity"
@@ -17,8 +19,9 @@ type Service struct {
 }
 
 type RegisterRequest struct {
-	PhoneNumber string
-	Name        string
+	PhoneNumber    string
+	Name           string
+	Password string
 }
 
 type RegisterResponse struct {
@@ -34,6 +37,10 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
 	}
 
+	if len(req.Password < 8){
+		return RegisterResponse{}, fmt.Errorf("password is not long enough")
+	}
+
 	if isUnique, err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || !isUnique {
 
 		if err != nil {
@@ -46,9 +53,10 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	}
 
 	user := entity.User{
-		ID:          0,
-		PhoneNumber: req.PhoneNumber,
-		Name:        req.Name,
+		ID:             0,
+		PhoneNumber:    req.PhoneNumber,
+		Name:           req.Name,
+		HashedPassword: GetMD5Hash(req.Password),
 	}
 
 	creatdUser, err := s.repo.RegisterUser(user)
@@ -58,4 +66,21 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	}
 
 	return RegisterResponse{User: creatdUser}, nil
+}
+
+type LoginRequest struct {
+	PhoneNumber string
+	Password    string
+}
+
+type LoginResponse struct {
+}
+
+func (s Service) Login(req LoginRequest) (LoginResponse, error) {
+	return {}, nil
+}
+
+func GetMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
 }
