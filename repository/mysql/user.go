@@ -3,17 +3,14 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/pooya-dehghan/entity"
 )
 
 func (d *MySQLDB) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
-	user := entity.User{}
-	var createdAt time.Time
 	row := d.db.QueryRow(`select * from users where phone_number = ?`, phoneNumber)
 
-	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &user.HashedPassword, &createdAt)
+	user, err := scanUser(row)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -43,11 +40,9 @@ func (d *MySQLDB) RegisterUser(user entity.User) (createdUser entity.User, err e
 }
 
 func (d *MySQLDB) FindUserByPhoneNumber(phoneNumber string) (entity.User, error) {
-	user := entity.User{}
-	var createdAt time.Time
 	row := d.db.QueryRow(`select * from users where phone_number = ?`, phoneNumber)
 
-	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &user.HashedPassword, &createdAt)
+	user, err := scanUser(row)
 	fmt.Println(user)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -56,4 +51,26 @@ func (d *MySQLDB) FindUserByPhoneNumber(phoneNumber string) (entity.User, error)
 	}
 
 	return user, nil
+}
+
+func (d *MySQLDB) FindUserByID(id uint) (entity.User, error) {
+	row := d.db.QueryRow(`select * from users where id = ?`, id)
+
+	user, err := scanUser(row)
+	fmt.Println(user)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return entity.User{}, nil
+		}
+	}
+
+	return user, nil
+}
+
+func scanUser(row *sql.Row) (entity.User, error) {
+	var createdAt []uint8
+	var user entity.User
+	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &user.HashedPassword, &createdAt)
+
+	return user, err
 }

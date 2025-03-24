@@ -1,17 +1,17 @@
 package userservice
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/pooya-dehghan/entity"
+	"github.com/pooya-dehghan/pkg/hash"
 	"github.com/pooya-dehghan/pkg/phonenumber"
 )
 
 type Repository interface {
 	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 	RegisterUser(user entity.User) (createdUser entity.User, err error)
+	FindUserByID(userID uint) (entity.User, error)
 }
 
 type Service struct {
@@ -19,9 +19,9 @@ type Service struct {
 }
 
 type RegisterRequest struct {
-	PhoneNumber string
-	Name        string
-	Password    string
+	PhoneNumber string `json:"phone_number"`
+	Name        string `json:"name"`
+	Password    string `json:"password"`
 }
 
 type RegisterResponse struct {
@@ -56,7 +56,7 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		ID:             0,
 		PhoneNumber:    req.PhoneNumber,
 		Name:           req.Name,
-		HashedPassword: GetMD5Hash(req.Password),
+		HashedPassword: hash.GetMD5Hash(req.Password),
 	}
 
 	creatdUser, err := s.repo.RegisterUser(user)
@@ -68,19 +68,17 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	return RegisterResponse{User: creatdUser}, nil
 }
 
-type LoginRequest struct {
-	PhoneNumber string
-	Password    string
+type ProfileRequest struct {
+	userID uint
 }
 
-type LoginResponse struct {
-}
+func (s Service) Profile(req ProfileRequest) (entity.User, error) {
 
-func (s Service) Login(req LoginRequest) (LoginResponse, error) {
-	return LoginResponse{}, nil
-}
+	user, err := s.repo.FindUserByID(req.userID)
 
-func GetMD5Hash(text string) string {
-	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return user, nil
 }
