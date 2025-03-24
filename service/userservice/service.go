@@ -62,7 +62,7 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	creatdUser, err := s.repo.RegisterUser(user)
 
 	if err != nil {
-		return RegisterResponse{}, fmt.Errorf("error in register user")
+		return RegisterResponse{}, fmt.Errorf("error in register user : %w", err)
 	}
 
 	return RegisterResponse{User: creatdUser}, nil
