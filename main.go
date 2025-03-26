@@ -11,6 +11,8 @@ import (
 	"github.com/pooya-dehghan/service/userservice"
 )
 
+const SIGNED_KEY = "jwt_key"
+
 func main() {
 	mux := http.NewServeMux()
 
@@ -39,7 +41,7 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 	mysqlRep := mysql.New()
 
-	userSvc := userservice.New(mysqlRep)
+	userSvc := userservice.New(mysqlRep, SIGNED_KEY)
 
 	userCreated, err := userSvc.Register(reqData)
 
@@ -52,7 +54,6 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 }
 
 func loginHandler(writer http.ResponseWriter, req *http.Request) {
-	//passes the password and phone number
 	if req.Method != http.MethodPost {
 		fmt.Print(writer, "invalid method")
 	}
@@ -79,4 +80,32 @@ func loginHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	fmt.Println(authRes)
+}
+
+func ProfileHandler(writer http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		fmt.Print(writer, "invalid method")
+	}
+
+	pReq := userservice.ProfileRequest{UserID: 0}
+
+	mysqlRep := mysql.New()
+
+	uSvc := userservice.New(mysqlRep, SIGNED_KEY)
+
+	pRes, err := uSvc.Profile(pReq)
+
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf(`unexpected error %s`, err.Error())))
+		return
+	}
+
+	data, err := json.Marshal(pRes)
+
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf(`error in marshaling %s`, err.Error())))
+		return
+	}
+
+	writer.Write(data)
 }

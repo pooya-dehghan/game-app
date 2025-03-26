@@ -15,7 +15,8 @@ type Repository interface {
 }
 
 type Service struct {
-	repo Repository
+	signedKey string
+	repo      Repository
 }
 
 type RegisterRequest struct {
@@ -28,8 +29,8 @@ type RegisterResponse struct {
 	User entity.User
 }
 
-func New(repo Repository) Service {
-	return Service{repo: repo}
+func New(repo Repository, signedKey string) Service {
+	return Service{repo: repo, signedKey: signedKey}
 }
 
 func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
@@ -69,12 +70,12 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 }
 
 type ProfileRequest struct {
-	userID uint
+	UserID uint
 }
 
 func (s Service) Profile(req ProfileRequest) (entity.User, error) {
 
-	user, err := s.repo.FindUserByID(req.userID)
+	user, err := s.repo.FindUserByID(req.UserID)
 
 	if err != nil {
 		fmt.Println(err)
