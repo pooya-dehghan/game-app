@@ -41,7 +41,7 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 	mysqlRep := mysql.New()
 
-	userSvc := userservice.New(mysqlRep, SIGNED_KEY)
+	userSvc := userservice.New(mysqlRep, []byte(SIGNED_KEY))
 
 	userCreated, err := userSvc.Register(reqData)
 
@@ -51,6 +51,14 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	fmt.Println(userCreated)
+
+	userMarshalData, err := json.Marshal(userCreated)
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf(`error in marshaling response %s`, err.Error())))
+		return
+	}
+	writer.Write(userMarshalData)
+
 }
 
 func loginHandler(writer http.ResponseWriter, req *http.Request) {
@@ -80,6 +88,15 @@ func loginHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	fmt.Println(authRes)
+
+	authReponse, err := json.Marshal(authRes)
+
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf(`error in marshaling response %s`, err.Error())))
+		return
+	}
+
+	writer.Write(authReponse)
 }
 
 func ProfileHandler(writer http.ResponseWriter, req *http.Request) {
@@ -91,7 +108,7 @@ func ProfileHandler(writer http.ResponseWriter, req *http.Request) {
 
 	mysqlRep := mysql.New()
 
-	uSvc := userservice.New(mysqlRep, SIGNED_KEY)
+	uSvc := userservice.New(mysqlRep, []byte(SIGNED_KEY))
 
 	pRes, err := uSvc.Profile(pReq)
 

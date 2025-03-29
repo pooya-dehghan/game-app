@@ -15,7 +15,7 @@ type Repository interface {
 }
 
 type Service struct {
-	signedKey string
+	signedKey []byte
 	repo      Repository
 }
 
@@ -26,30 +26,40 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	User entity.User
+	User UserResponse
 }
 
-func New(repo Repository, signedKey string) Service {
+type UserResponse struct {
+	ID          uint   `json:"id"`
+	PhoneNumber string `json:"phone_number"`
+	Name        string `json:"name"`
+}
+
+func New(repo Repository, signedKey []byte) Service {
 	return Service{repo: repo, signedKey: signedKey}
 }
 
-func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
+func (s Service) Register(req RegisterRequest) (UserResponse, error) {
 	if !phonenumber.IsValid(req.PhoneNumber) {
-		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
+		return UserResponse{}, fmt.Errorf("phone number is not valid")
+	}
+
+	if req.Name == "" {
+		return UserResponse{}, fmt.Errorf("name is empty")
 	}
 
 	if len(req.Password) < 8 {
-		return RegisterResponse{}, fmt.Errorf("password is not long enough")
+		return UserResponse{}, fmt.Errorf("password is not long enough")
 	}
 
 	if isUnique, err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || !isUnique {
 
 		if err != nil {
-			return RegisterResponse{}, err
+			return UserResponse{}, err
 		}
 
 		if !isUnique {
-			return RegisterResponse{}, fmt.Errorf("phone number is not unique")
+			return UserResponse{}, fmt.Errorf("phone number is not unique")
 		}
 	}
 
@@ -63,10 +73,16 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	creatdUser, err := s.repo.RegisterUser(user)
 
 	if err != nil {
-		return RegisterResponse{}, fmt.Errorf("error in register user : %w", err)
+		return UserResponse{}, fmt.Errorf("error in register user : %w", err)
 	}
 
-	return RegisterResponse{User: creatdUser}, nil
+	userResponse := UserResponse{
+		ID:          creatdUser.ID,
+		PhoneNumber: creatdUser.PhoneNumber,
+		Name:        creatdUser.Name,
+	}
+
+	return userResponse, nil
 }
 
 type ProfileRequest struct {

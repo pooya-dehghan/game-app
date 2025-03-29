@@ -14,8 +14,8 @@ type Claims struct {
 	UserID uint
 }
 
-func createToken(userID uint, signedKey string) (string, error) {
-	t := jwt.New(jwt.GetSigningMethod("RS256"))
+func createToken(userID uint, signedKey []byte) (string, error) {
+	t := jwt.New(jwt.GetSigningMethod("HS256"))
 	t.Claims = &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
@@ -23,7 +23,7 @@ func createToken(userID uint, signedKey string) (string, error) {
 		UserID: userID,
 	}
 
-	return t.SignedString(signedKey)
+	return t.SignedString([]byte(signedKey))
 }
 
 type Repository interface {
@@ -31,7 +31,7 @@ type Repository interface {
 }
 
 type Service struct {
-	signKey string
+	signKey []byte
 	repo    Repository
 }
 
@@ -40,8 +40,8 @@ func NewService(repo Repository) Service {
 }
 
 type LoginRequest struct {
-	PhoneNumber string
-	Password    string
+	PhoneNumber string `json:"phone_number"`
+	Password    string `json:"password"`
 }
 
 type LoginResponse struct {
