@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pooya-dehghan/repository/mysql"
 	"github.com/pooya-dehghan/service/authservice"
@@ -78,7 +79,7 @@ func loginHandler(writer http.ResponseWriter, req *http.Request) {
 
 	mysqlRep := mysql.New()
 
-	authSvc := authservice.NewService(mysqlRep)
+	authSvc := authservice.NewService("SignKey", "as", "fs", mysqlRep, time.Minute*24, time.Hour*24)
 
 	authRes, err := authSvc.Login(reqData)
 

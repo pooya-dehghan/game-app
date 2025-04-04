@@ -2,6 +2,7 @@ package authservice
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -9,34 +10,72 @@ import (
 	"github.com/pooya-dehghan/pkg/hash"
 )
 
-type Claims struct {
-	jwt.RegisteredClaims
-	UserID uint
+type Service struct {
+	signKey                []byte
+	repo                   Repository
+	accessTokenExpiration  time.Duration
+	refreshTokenExpiration time.Duration
+	accessTokenSubject     string
+	refreshTokenSubject    string
 }
 
-func createToken(userID uint, signedKey []byte) (string, error) {
+func NewService(signKey string, accessTokenSubject string, refreshTokenSubject string, repo Repository, accessTokenExpiration time.Duration, refreshTokenExpiration time.Duration) Service {
+	return Service{repo: repo, signKey: []byte(signKey), accessTokenExpiration: accessTokenExpiration, refreshTokenExpiration: refreshTokenExpiration, accessTokenSubject: accessTokenSubject, refreshTokenSubject: refreshTokenSubject}
+}
+
+func (s Service) CreateAccessToken(user entity.User) (string, error) {
+	return s.createToken(user.ID, s.accessTokenSubject, s.accessTokenExpiration)
+
+}
+
+func (s Service) CreateRefreshToken(user entity.User) (string, error) {
+	return s.createToken(user.ID, s.refreshTokenSubject, s.refreshTokenExpiration)
+}
+
+func (s Service) ParseToken(bearerToken string) (*Claims, error) {
+	tokenStr := strings.Replace(bearerToken, "Bearer ", "", 1)
+
+	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(s.signKey), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims := token.Claims; token.Valid {
+		return claims.(*Claims), nil
+	} else {
+		return nil, err
+	}
+
+}
+
+type Claims struct {
+	jwt.RegisteredClaims
+	UserID uint `json:"user_id"`
+}
+
+func (c Claims) Valid() error {
+	// return c.RegisteredClaims.Valid()
+	return nil
+}
+
+func (s Service) createToken(userID uint, subject string, expiresAt time.Duration) (string, error) {
 	t := jwt.New(jwt.GetSigningMethod("HS256"))
 	t.Claims = &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   subject,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 		},
 		UserID: userID,
 	}
 
-	return t.SignedString([]byte(signedKey))
+	return t.SignedString([]byte(s.signKey))
 }
 
 type Repository interface {
 	FindUserByPhoneNumber(phoneNumber string) (entity.User, error)
-}
-
-type Service struct {
-	signKey []byte
-	repo    Repository
-}
-
-func NewService(repo Repository) Service {
-	return Service{repo: repo}
 }
 
 type LoginRequest struct {
@@ -59,7 +98,7 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("password is not correct")
 	}
 
-	token, err := createToken(user.ID, s.signKey)
+	token, err := s.createToken(user.ID, s.accessTokenSubject, s.accessTokenExpiration)
 
 	if err != nil {
 		return LoginResponse{}, fmt.Errorf("unexpected error : %w", err)
