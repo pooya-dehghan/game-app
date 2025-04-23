@@ -8,15 +8,22 @@ import (
 	"github.com/pooya-dehghan/pkg/phonenumber"
 )
 
+type AuthGenerator interface {
+	CreateAccessToken(user entity.User) (string, error)
+	CreateRefreshToken(user entity.User) (string, error)
+}
+
 type Repository interface {
 	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 	RegisterUser(user entity.User) (createdUser entity.User, err error)
 	FindUserByID(userID uint) (entity.User, error)
+	FindUserByPhoneNumber(phoneNumber string) (entity.User, error)
 }
 
 type Service struct {
 	signedKey []byte
 	repo      Repository
+	auth      AuthGenerator
 }
 
 type RegisterRequest struct {
@@ -98,4 +105,40 @@ func (s Service) Profile(req ProfileRequest) (entity.User, error) {
 	}
 
 	return user, nil
+}
+
+type LoginRequest struct {
+	PhoneNumber string `json:"phone_number"`
+	Password    string `json:"password"`
+}
+
+type LoginResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (s Service) Login(req LoginRequest) (LoginResponse, error) {
+	user, err := s.repo.FindUserByPhoneNumber(req.PhoneNumber)
+
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("error in register user : %w", err)
+	}
+
+	if user.HashedPassword != hash.GetMD5Hash(req.Password) {
+		return LoginResponse{}, fmt.Errorf("password is not correct")
+	}
+
+	access_token, err := s.auth.CreateAccessToken(user)
+
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("unexpected error : %w", err)
+	}
+
+	refresh_token, err := s.auth.CreateRefreshToken(user)
+
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("unexpected error : %w", err)
+	}
+
+	return LoginResponse{AccessToken: access_token, RefreshToken: refresh_token}, nil
 }

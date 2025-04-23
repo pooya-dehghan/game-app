@@ -1,42 +1,46 @@
 package authservice
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/pooya-dehghan/entity"
-	"github.com/pooya-dehghan/pkg/hash"
 )
 
-type Service struct {
-	signKey                []byte
-	repo                   Repository
-	accessTokenExpiration  time.Duration
-	refreshTokenExpiration time.Duration
-	accessTokenSubject     string
-	refreshTokenSubject    string
+type Config struct {
+	SignKey                []byte
+	Repo                   Repository
+	AccessTokenExpiration  time.Duration
+	RefreshTokenExpiration time.Duration
+	AccessTokenSubject     string
+	RefreshTokenSubject    string
 }
 
-func NewService(signKey string, accessTokenSubject string, refreshTokenSubject string, repo Repository, accessTokenExpiration time.Duration, refreshTokenExpiration time.Duration) Service {
-	return Service{repo: repo, signKey: []byte(signKey), accessTokenExpiration: accessTokenExpiration, refreshTokenExpiration: refreshTokenExpiration, accessTokenSubject: accessTokenSubject, refreshTokenSubject: refreshTokenSubject}
+type Service struct {
+	config Config
+}
+
+func NewService(cfg Config) Service {
+	return Service{
+		config: cfg,
+	}
 }
 
 func (s Service) CreateAccessToken(user entity.User) (string, error) {
-	return s.createToken(user.ID, s.accessTokenSubject, s.accessTokenExpiration)
+	return s.createToken(user.ID, s.config.AccessTokenSubject, s.config.AccessTokenExpiration)
 
 }
 
 func (s Service) CreateRefreshToken(user entity.User) (string, error) {
-	return s.createToken(user.ID, s.refreshTokenSubject, s.refreshTokenExpiration)
+	return s.createToken(user.ID, s.config.RefreshTokenSubject, s.config.RefreshTokenExpiration)
 }
 
 func (s Service) ParseToken(bearerToken string) (*Claims, error) {
 	tokenStr := strings.Replace(bearerToken, "Bearer ", "", 1)
 
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(s.signKey), nil
+		return []byte(s.config.SignKey), nil
 	})
 
 	if err != nil {
@@ -71,38 +75,9 @@ func (s Service) createToken(userID uint, subject string, expiresAt time.Duratio
 		UserID: userID,
 	}
 
-	return t.SignedString([]byte(s.signKey))
+	return t.SignedString([]byte(s.config.SignKey))
 }
 
 type Repository interface {
 	FindUserByPhoneNumber(phoneNumber string) (entity.User, error)
-}
-
-type LoginRequest struct {
-	PhoneNumber string `json:"phone_number"`
-	Password    string `json:"password"`
-}
-
-type LoginResponse struct {
-	AccessToken string `json:"access_token"`
-}
-
-func (s Service) Login(req LoginRequest) (LoginResponse, error) {
-	user, err := s.repo.FindUserByPhoneNumber(req.PhoneNumber)
-
-	if err != nil {
-		return LoginResponse{}, fmt.Errorf("error in register user : %w", err)
-	}
-
-	if user.HashedPassword != hash.GetMD5Hash(req.Password) {
-		return LoginResponse{}, fmt.Errorf("password is not correct")
-	}
-
-	token, err := s.createToken(user.ID, s.accessTokenSubject, s.accessTokenExpiration)
-
-	if err != nil {
-		return LoginResponse{}, fmt.Errorf("unexpected error : %w", err)
-	}
-
-	return LoginResponse{AccessToken: token}, nil
 }

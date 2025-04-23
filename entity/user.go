@@ -1,9 +1,9 @@
 package entity
 
 type User struct {
-	ID             uint
-	PhoneNumber    string
-	Avatar         string
-	Name           string
-	HashedPassword string
+	ID             uint   `json:"id"`
+	PhoneNumber    string `json:"phone_number"`
+	Avatar         string `json:"avatar"`
+	Name           string `json:"name"`
+	HashedPassword string `json:"-"`
 }
